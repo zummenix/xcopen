@@ -1,0 +1,6 @@
+[package]
+name = "xcopen"
+version = "0.1.0"
+authors = ["Aleksey Kuznetsov <zummenix@gmail.com>"]
+
+[dependencies]
