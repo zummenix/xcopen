@@ -1,15 +1,7 @@
 extern crate walkdir;
 
 use std::path::{Path, PathBuf};
-use walkdir::DirEntry;
-
-pub fn is_xcode_file(entry: &DirEntry) -> bool {
-    if let Some(ext) = entry.path().extension() {
-        ext == "xcodeproj" || ext == "xcworkspace"
-    } else {
-        false
-    }
-}
+use walkdir::{DirEntry, WalkDir};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum FileKind {
@@ -24,14 +16,48 @@ pub struct FileModel {
 }
 
 pub fn files(root: &Path) -> Vec<FileModel> {
-    Vec::new()
+    let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
+    files_internal(root, iter)
 }
 
-pub trait FilePathProvider {
-    fn iter(&self) -> Box<Iterator<Item = &FilePath>>;
+fn files_internal<I, F>(root: &Path, files_iter: I) -> Vec<FileModel>
+where
+    I: Iterator<Item = F>,
+    F: FilePath,
+{
+    files_iter
+        .filter_map(|file_path| {
+            let path = file_path.path();
+            if is_xcodeproj(path) {
+                return Some(FileModel {
+                    path: path.to_owned(),
+                    kind: FileKind::Project,
+                });
+            }
+            if is_xcworkspace(path) {
+                return Some(FileModel {
+                    path: path.to_owned(),
+                    kind: FileKind::Workspace,
+                });
+            }
+            None
+        })
+        .collect()
 }
 
-pub trait FilePath {
+fn is_xcodeproj(path: &Path) -> bool {
+    path.extension()
+        .map(|ext| ext == "xcodeproj")
+        .unwrap_or(false)
+}
+
+fn is_xcworkspace(path: &Path) -> bool {
+    path.extension()
+        .map(|ext| ext == "xcworkspace")
+        .unwrap_or(false)
+}
+
+trait FilePath {
     fn path(&self) -> &Path;
 }
 
