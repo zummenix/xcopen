@@ -6,24 +6,12 @@ extern crate walkdir;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum FileKind {
-    Project,
-    Workspace,
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct FileModel {
-    pub path: PathBuf,
-    pub kind: FileKind,
-}
-
-pub fn files(root: &Path) -> Vec<FileModel> {
+pub fn files(root: &Path) -> Vec<PathBuf> {
     let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
     files_internal(root, iter)
 }
 
-fn files_internal<I, F>(root: &Path, files_iter: I) -> Vec<FileModel>
+fn files_internal<I, F>(root: &Path, files_iter: I) -> Vec<PathBuf>
 where
     I: Iterator<Item = F>,
     F: FilePath,
@@ -32,10 +20,7 @@ where
         .filter_map(|file_path| {
             let path = file_path.path();
             if is_xcodeproj(path) {
-                return Some(FileModel {
-                    path: path.to_owned(),
-                    kind: FileKind::Project,
-                });
+                return Some(path.to_owned());
             }
             if is_xcworkspace(path) {
                 // Skip workspaces under xcodeproj, example:
@@ -45,10 +30,7 @@ where
                 if path.parent().map(is_xcodeproj).unwrap_or(false) {
                     return None;
                 } else {
-                    return Some(FileModel {
-                        path: path.to_owned(),
-                        kind: FileKind::Workspace,
-                    });
+                    return Some(path.to_owned());
                 }
             }
             None
@@ -56,13 +38,13 @@ where
         .collect()
 }
 
-fn is_xcodeproj(path: &Path) -> bool {
+pub fn is_xcodeproj(path: &Path) -> bool {
     path.extension()
         .map(|ext| ext == "xcodeproj")
         .unwrap_or(false)
 }
 
-fn is_xcworkspace(path: &Path) -> bool {
+pub fn is_xcworkspace(path: &Path) -> bool {
     path.extension()
         .map(|ext| ext == "xcworkspace")
         .unwrap_or(false)
@@ -114,14 +96,8 @@ mod tests {
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
         let result = vec![
-            FileModel {
-                path: PathBuf::from("/projects/my/App.xcodeproj"),
-                kind: FileKind::Project,
-            },
-            FileModel {
-                path: PathBuf::from("/projects/my/App.xcworkspace"),
-                kind: FileKind::Workspace,
-            },
+            PathBuf::from("/projects/my/App.xcodeproj"),
+            PathBuf::from("/projects/my/App.xcworkspace"),
         ];
         expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
