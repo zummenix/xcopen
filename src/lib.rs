@@ -39,14 +39,16 @@ where
 }
 
 pub fn is_xcodeproj(path: &Path) -> bool {
-    path.extension()
-        .map(|ext| ext == "xcodeproj")
-        .unwrap_or(false)
+    has_extension(path, "xcodeproj")
 }
 
 pub fn is_xcworkspace(path: &Path) -> bool {
+    has_extension(path, "xcworkspace")
+}
+
+fn has_extension(path: &Path, extension: &str) -> bool {
     path.extension()
-        .map(|ext| ext == "xcworkspace")
+        .map(|ext| ext == extension)
         .unwrap_or(false)
 }
 
