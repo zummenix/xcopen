@@ -5,3 +5,6 @@ authors = ["Aleksey Kuznetsov <zummenix@gmail.com>"]
 
 [dependencies]
 walkdir = "2"
+
+[dev-dependencies]
+expectest = "~0.10"

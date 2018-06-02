@@ -1,3 +1,6 @@
+#[macro_use(expect)]
+#[cfg(test)]
+extern crate expectest;
 extern crate walkdir;
 
 use std::path::{Path, PathBuf};
@@ -35,10 +38,18 @@ where
                 });
             }
             if is_xcworkspace(path) {
-                return Some(FileModel {
-                    path: path.to_owned(),
-                    kind: FileKind::Workspace,
-                });
+                // Skip workspaces under xcodeproj, example:
+                // /Backgrounder/Backgrounder.xcodeproj
+                // /Backgrounder/Backgrounder.xcodeproj/project.xcworkspace
+                // /Backgrounder/Backgrounder.xcworkspace
+                if path.parent().map(is_xcodeproj).unwrap_or(false) {
+                    return None;
+                } else {
+                    return Some(FileModel {
+                        path: path.to_owned(),
+                        kind: FileKind::Workspace,
+                    });
+                }
             }
             None
         })
@@ -80,3 +91,38 @@ impl FilePath for DirEntry {
 // TODO: filter note_modules (smart)
 // /Users/zummenix/projects/RNApp/node_modules/react-native/Libraries/Sample/Sample.xcodeproj
 // /Users/zummenix/projects/RNApp/node_modules/react-native/Libraries/LinkingIOS/RCTLinking.xcodeproj
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use expectest::prelude::*;
+
+    impl FilePath for PathBuf {
+        fn path(&self) -> &Path {
+            self.as_path()
+        }
+    }
+
+    #[test]
+    fn filters_out_project_and_workspace_files() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/examples"),
+            PathBuf::from("/projects/my/some.txt"),
+            PathBuf::from("/projects/my/App.xcodeproj"),
+            PathBuf::from("/projects/my/App.xcodeproj/project.xcworkspace"),
+            PathBuf::from("/projects/my/App.xcworkspace"),
+        ];
+        let result = vec![
+            FileModel {
+                path: PathBuf::from("/projects/my/App.xcodeproj"),
+                kind: FileKind::Project,
+            },
+            FileModel {
+                path: PathBuf::from("/projects/my/App.xcworkspace"),
+                kind: FileKind::Workspace,
+            },
+        ];
+        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+}
