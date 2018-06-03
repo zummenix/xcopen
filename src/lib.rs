@@ -6,7 +6,7 @@ extern crate walkdir;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
-const SPECIAL_DIRS: &[&str] = &["Pods"];
+const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules"];
 
 pub fn files(root: &Path) -> Vec<PathBuf> {
     let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
@@ -79,20 +79,6 @@ impl FilePath for DirEntry {
         self.path()
     }
 }
-// TODO: handle paths under .xcodeproj:
-// /Users/zummenix/projects/Backgrounder/Backgrounder.xcodeproj
-// /Users/zummenix/projects/Backgrounder/Backgrounder.xcodeproj/project.xcworkspace
-// /Users/zummenix/projects/Backgrounder/Pods/Pods.xcodeproj
-// /Users/zummenix/projects/Backgrounder/Backgrounder.xcworkspace
-
-// TODO: filter Pods (smart)
-// /Users/zummenix/projects/Backgrounder/Backgrounder.xcodeproj
-// /Users/zummenix/projects/Backgrounder/Pods/Pods.xcodeproj
-// /Users/zummenix/projects/Backgrounder/Backgrounder.xcworkspace
-
-// TODO: filter note_modules (smart)
-// /Users/zummenix/projects/RNApp/node_modules/react-native/Libraries/Sample/Sample.xcodeproj
-// /Users/zummenix/projects/RNApp/node_modules/react-native/Libraries/LinkingIOS/RCTLinking.xcodeproj
 
 #[cfg(test)]
 mod tests {
@@ -141,6 +127,33 @@ mod tests {
             PathBuf::from("/projects/my/Pods/some.txt"),
         ];
         let result = vec![PathBuf::from("/projects/my/Pods/Pods.xcodeproj")];
+        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn excludes_node_modules_directory() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
+            PathBuf::from("/projects/my/App.xcworkspace"),
+        ];
+        let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
+        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn includes_node_modules_directory() {
+        let root = PathBuf::from("/projects/my/node_modules");
+        let input = vec![
+            PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
+            PathBuf::from("/projects/my/node_modules/some.txt"),
+        ];
+        let result = vec![
+            PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
+        ];
         expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 }
