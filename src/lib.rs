@@ -20,27 +20,23 @@ where
 {
     let root_is_special = SPECIAL_DIRS.iter().any(|dir| has_parent(root, dir));
     files_iter
-        .filter_map(|file_path| {
+        .filter(|file_path| is_xcodeproj(file_path.path()) || is_xcworkspace(file_path.path()))
+        .filter(|file_path| {
+            // Skip workspaces under xcodeproj, example:
+            // /Backgrounder/Backgrounder.xcodeproj
+            // /Backgrounder/Backgrounder.xcodeproj/project.xcworkspace
+            // /Backgrounder/Backgrounder.xcworkspace
             let path = file_path.path();
+            !(is_xcworkspace(path) && path.parent().map(is_xcodeproj).unwrap_or(false))
+        })
+        .filter_map(|file_path| {
             // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
-            if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(path, dir)) {
-                return None;
+            let path = file_path.path();
+            if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(&path, dir)) {
+                None
+            } else {
+                Some(path.to_owned())
             }
-            if is_xcodeproj(path) {
-                return Some(path.to_owned());
-            }
-            if is_xcworkspace(path) {
-                // Skip workspaces under xcodeproj, example:
-                // /Backgrounder/Backgrounder.xcodeproj
-                // /Backgrounder/Backgrounder.xcodeproj/project.xcworkspace
-                // /Backgrounder/Backgrounder.xcworkspace
-                if path.parent().map(is_xcodeproj).unwrap_or(false) {
-                    return None;
-                } else {
-                    return Some(path.to_owned());
-                }
-            }
-            None
         })
         .collect()
 }
