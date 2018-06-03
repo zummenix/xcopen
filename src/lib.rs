@@ -6,6 +6,8 @@ extern crate walkdir;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
+const SPECIAL_DIRS: &[&str] = &["Pods"];
+
 pub fn files(root: &Path) -> Vec<PathBuf> {
     let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
     files_internal(root, iter)
@@ -16,9 +18,14 @@ where
     I: Iterator<Item = F>,
     F: FilePath,
 {
+    let root_is_special = SPECIAL_DIRS.iter().any(|dir| has_parent(root, dir));
     files_iter
         .filter_map(|file_path| {
             let path = file_path.path();
+            // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
+            if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(path, dir)) {
+                return None;
+            }
             if is_xcodeproj(path) {
                 return Some(path.to_owned());
             }
@@ -50,6 +57,17 @@ fn has_extension(path: &Path, extension: &str) -> bool {
     path.extension()
         .map(|ext| ext == extension)
         .unwrap_or(false)
+}
+
+fn has_parent(path: &Path, parent: &str) -> bool {
+    if path.ends_with(parent) {
+        true
+    } else {
+        match path.parent() {
+            Some(path) => has_parent(path, parent),
+            None => false,
+        }
+    }
 }
 
 trait FilePath {
@@ -101,6 +119,28 @@ mod tests {
             PathBuf::from("/projects/my/App.xcodeproj"),
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
+        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn excludes_pods_directory() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/Pods/Pods.xcodeproj"),
+            PathBuf::from("/projects/my/App.xcworkspace"),
+        ];
+        let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
+        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn includes_pods_directory() {
+        let root = PathBuf::from("/projects/my/Pods");
+        let input = vec![
+            PathBuf::from("/projects/my/Pods/Pods.xcodeproj"),
+            PathBuf::from("/projects/my/Pods/some.txt"),
+        ];
+        let result = vec![PathBuf::from("/projects/my/Pods/Pods.xcodeproj")];
         expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 }
