@@ -7,7 +7,7 @@ fn main() {
     let root = env::current_dir().expect("an access to a current directory");
     let files = xcopen::files(&root);
     if files.len() == 0 {
-        println!("No projects found");
+        println!("No xcworkspace/xcodeproj file found under current directory");
     } else if files.len() == 1 {
         open(&files[0]);
     } else if files.len() == 2 {
