@@ -8,30 +8,30 @@ use walkdir::{DirEntry, WalkDir};
 
 const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules"];
 
-pub fn files(root: &Path) -> Vec<PathBuf> {
+pub fn entries(root: &Path) -> Vec<PathBuf> {
     let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
-    files_internal(root, iter)
+    entries_internal(root, iter)
 }
 
-fn files_internal<I, F>(root: &Path, files_iter: I) -> Vec<PathBuf>
+fn entries_internal<I, F>(root: &Path, entries_iter: I) -> Vec<PathBuf>
 where
     I: Iterator<Item = F>,
-    F: FilePath,
+    F: Entry,
 {
     let root_is_special = SPECIAL_DIRS.iter().any(|dir| has_parent(root, dir));
-    files_iter
-        .filter(|file_path| is_xcodeproj(file_path.path()) || is_xcworkspace(file_path.path()))
-        .filter(|file_path| {
+    entries_iter
+        .filter(|entry| is_xcodeproj(entry.path()) || is_xcworkspace(entry.path()))
+        .filter(|entry| {
             // Skip workspaces under xcodeproj, example:
             // /Backgrounder/Backgrounder.xcodeproj
             // /Backgrounder/Backgrounder.xcodeproj/project.xcworkspace
             // /Backgrounder/Backgrounder.xcworkspace
-            let path = file_path.path();
+            let path = entry.path();
             !(is_xcworkspace(path) && path.parent().map(is_xcodeproj).unwrap_or(false))
         })
-        .filter_map(|file_path| {
+        .filter_map(|entry| {
             // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
-            let path = file_path.path();
+            let path = entry.path();
             if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(&path, dir)) {
                 None
             } else {
@@ -66,11 +66,11 @@ fn has_parent(path: &Path, parent: &str) -> bool {
     }
 }
 
-trait FilePath {
+trait Entry {
     fn path(&self) -> &Path;
 }
 
-impl FilePath for DirEntry {
+impl Entry for DirEntry {
     fn path(&self) -> &Path {
         self.path()
     }
@@ -81,7 +81,7 @@ mod tests {
     use super::*;
     use expectest::prelude::*;
 
-    impl FilePath for PathBuf {
+    impl Entry for PathBuf {
         fn path(&self) -> &Path {
             self.as_path()
         }
@@ -101,7 +101,7 @@ mod tests {
             PathBuf::from("/projects/my/App.xcodeproj"),
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
-        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod tests {
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
         let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
-        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
@@ -123,7 +123,7 @@ mod tests {
             PathBuf::from("/projects/my/Pods/some.txt"),
         ];
         let result = vec![PathBuf::from("/projects/my/Pods/Pods.xcodeproj")];
-        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
@@ -135,7 +135,7 @@ mod tests {
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
         let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
-        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
@@ -150,6 +150,6 @@ mod tests {
             PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
             PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
         ];
-        expect!(files_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 }
