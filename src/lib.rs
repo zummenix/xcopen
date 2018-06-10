@@ -1,8 +1,10 @@
 #[macro_use(expect)]
 #[cfg(test)]
 extern crate expectest;
+extern crate itertools;
 extern crate walkdir;
 
+use itertools::Itertools;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
@@ -11,6 +13,15 @@ const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules"];
 pub fn entries(root: &Path) -> Vec<PathBuf> {
     let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
     entries_internal(root, iter)
+}
+
+pub fn grouped_entries(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
+    entries
+        .into_iter()
+        .group_by(|entry| entry.parent().unwrap().to_owned())
+        .into_iter()
+        .map(|(key, group)| (key, group.collect()))
+        .collect()
 }
 
 fn entries_internal<I, F>(root: &Path, entries_iter: I) -> Vec<PathBuf>
