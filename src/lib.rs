@@ -15,7 +15,7 @@ pub fn entries(root: &Path) -> Vec<PathBuf> {
     entries_internal(root, iter)
 }
 
-pub fn grouped_entries(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
+pub fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
     entries
         .into_iter()
         .group_by(|entry| entry.parent().unwrap().to_owned())
@@ -162,5 +162,28 @@ mod tests {
             PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
         ];
         expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn groups_entries_by_parent_directory() {
+        let input = vec![
+            PathBuf::from("/projects/my/one/file1"),
+            PathBuf::from("/projects/my/one/file2"),
+            PathBuf::from("/projects/my/file0"),
+        ];
+        let result = vec![
+            (
+                PathBuf::from("/projects/my/one"),
+                vec![
+                    PathBuf::from("/projects/my/one/file1"),
+                    PathBuf::from("/projects/my/one/file2"),
+                ],
+            ),
+            (
+                PathBuf::from("/projects/my"),
+                vec![PathBuf::from("/projects/my/file0")],
+            ),
+        ];
+        expect!(grouped(input)).to(be_equal_to(result));
     }
 }
