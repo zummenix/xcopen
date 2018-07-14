@@ -1,7 +1,9 @@
+extern crate rustyline;
 extern crate xcopen;
 
 use xcopen::Decision;
 
+use std::collections::HashMap;
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -12,7 +14,31 @@ fn main() {
             println!("No xcworkspace/xcodeproj file found under current directory");
         }
         Decision::Open(path) => open(&path),
-        Decision::Show(groups) => println!("{:?}", groups),
+        Decision::Show(groups) => {
+            let mut number: u32 = 1;
+            let mut map: HashMap<u32, PathBuf> = HashMap::new();
+            for (group, projects) in groups {
+                println!("in {}:", group.to_string_lossy());
+                for project in projects {
+                    if let Some(file_name) = project.file_name() {
+                        println!("   {}. {}", number, file_name.to_string_lossy());
+                        map.insert(number, project.to_owned());
+                        number += 1;
+                    }
+                }
+            }
+            let mut rl = rustyline::Editor::<()>::new();
+            match rl.readline("Enter the number to open: ") {
+                Ok(line) => {
+                    if let Ok(number) = line.parse::<u32>() {
+                        if let Some(project) = map.get(&number) {
+                            open(&project);
+                        }
+                    }
+                }
+                Err(_) => {}
+            }
+        }
     }
 }
 
