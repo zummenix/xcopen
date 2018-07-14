@@ -1,27 +1,18 @@
 extern crate xcopen;
 
+use xcopen::Decision;
+
 use std::env;
 use std::path::{Path, PathBuf};
 
 fn main() {
     let root = env::current_dir().expect("an access to a current directory");
-    let entries = xcopen::entries(&root);
-    if entries.len() == 0 {
-        println!("No xcworkspace/xcodeproj file found under current directory");
-    } else if entries.len() == 1 {
-        open(&entries[0]);
-    } else if entries.len() == 2 {
-        let first = &entries[0];
-        let second = &entries[1];
-        if xcopen::is_xcodeproj(&first) && xcopen::is_xcworkspace(&second) {
-            open(&second);
-        } else if xcopen::is_xcodeproj(&second) && xcopen::is_xcworkspace(&first) {
-            open(&first);
-        } else {
-            show(&entries);
+    match xcopen::decision(&root) {
+        Decision::NoEntries => {
+            println!("No xcworkspace/xcodeproj file found under current directory");
         }
-    } else {
-        show(&entries);
+        Decision::Open(path) => open(&path),
+        Decision::Show(groups) => println!("{:?}", groups),
     }
 }
 
@@ -31,8 +22,4 @@ fn open(path: &Path) {
         .arg(path)
         .output()
         .expect("open a project");
-}
-
-fn show(paths: &[PathBuf]) {
-    println!("{:?}", paths);
 }

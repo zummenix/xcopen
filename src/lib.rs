@@ -10,18 +10,53 @@ use walkdir::{DirEntry, WalkDir};
 
 const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules"];
 
-pub fn entries(root: &Path) -> Vec<PathBuf> {
-    let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
-    entries_internal(root, iter)
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum Decision {
+    Open(PathBuf),
+    Show(Vec<(PathBuf, Vec<PathBuf>)>),
+    NoEntries,
 }
 
-pub fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
+pub fn decision(root: &Path) -> Decision {
+    let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
+    decision_internal(root, iter)
+}
+
+fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
     entries
         .into_iter()
         .group_by(|entry| entry.parent().unwrap().to_owned())
         .into_iter()
         .map(|(key, group)| (key, group.collect()))
         .collect()
+}
+
+fn decision_internal<I, F>(root: &Path, entries_iter: I) -> Decision
+where
+    I: Iterator<Item = F>,
+    F: Entry,
+{
+    let entries = entries_internal(root, entries_iter);
+    if entries.len() == 0 {
+        Decision::NoEntries
+    } else if entries.len() == 1 {
+        Decision::Open(entries[0].to_owned())
+    } else {
+        let groups = grouped(entries);
+        if groups.len() == 1 && groups[0].1.len() == 2 {
+            let first = groups[0].1[0].to_owned();
+            let second = groups[0].1[1].to_owned();
+            if is_xcodeproj(&first) && is_xcworkspace(&second) {
+                Decision::Open(second)
+            } else if is_xcodeproj(&second) && is_xcworkspace(&first) {
+                Decision::Open(first)
+            } else {
+                Decision::Show(groups)
+            }
+        } else {
+            Decision::Show(groups)
+        }
+    }
 }
 
 fn entries_internal<I, F>(root: &Path, entries_iter: I) -> Vec<PathBuf>
@@ -52,11 +87,11 @@ where
         .collect()
 }
 
-pub fn is_xcodeproj(path: &Path) -> bool {
+fn is_xcodeproj(path: &Path) -> bool {
     has_extension(path, "xcodeproj")
 }
 
-pub fn is_xcworkspace(path: &Path) -> bool {
+fn is_xcworkspace(path: &Path) -> bool {
     has_extension(path, "xcworkspace")
 }
 
@@ -185,5 +220,79 @@ mod tests {
             ),
         ];
         expect!(grouped(input)).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn decision_no_entries_if_without_projects() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![PathBuf::from("/projects/my/file1")];
+        let result = Decision::NoEntries;
+        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn decision_open_one_project() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![PathBuf::from("/projects/my/Sample.xcodeproj")];
+        let result = Decision::Open(PathBuf::from("/projects/my/Sample.xcodeproj"));
+        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn decision_open_workspace_with_project_first() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/Sample.xcworkspace"),
+        ];
+        let result = Decision::Open(PathBuf::from("/projects/my/Sample.xcworkspace"));
+        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn decision_open_workspace_with_project_second() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/Sample.xcworkspace"),
+            PathBuf::from("/projects/my/Sample.xcodeproj"),
+        ];
+        let result = Decision::Open(PathBuf::from("/projects/my/Sample.xcworkspace"));
+        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn decision_show_one_group_three_projects() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/Sample.xcworkspace"),
+            PathBuf::from("/projects/my/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/Example.xcodeproj"),
+        ];
+        let result = Decision::Show(vec![(PathBuf::from("/projects/my"), input.clone())]);
+        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn decision_show_multiple_groups() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/Sample.xcworkspace"),
+            PathBuf::from("/projects/my/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/example/Example.xcodeproj"),
+        ];
+        let result = Decision::Show(vec![
+            (
+                PathBuf::from("/projects/my"),
+                vec![
+                    PathBuf::from("/projects/my/Sample.xcworkspace"),
+                    PathBuf::from("/projects/my/Sample.xcodeproj"),
+                ],
+            ),
+            (
+                PathBuf::from("/projects/my/example"),
+                vec![PathBuf::from("/projects/my/example/Example.xcodeproj")],
+            ),
+        ]);
+        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 }
