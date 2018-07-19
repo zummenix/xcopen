@@ -8,23 +8,21 @@ use std::env;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
-fn main() {
+fn main() -> io::Result<()> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
     let root = env::current_dir().expect("an access to a current directory");
     match xcopen::decision(&root) {
-        Decision::NoEntries => {
-            writeln!(
-                &mut handle,
-                "No xcworkspace/xcodeproj file found under current directory"
-            );
-        }
-        Decision::Open(path) => open(&path),
+        Decision::NoEntries => writeln!(
+            &mut handle,
+            "No xcworkspace/xcodeproj file found under current directory"
+        ),
+        Decision::Open(path) => open(&path, &mut handle),
         Decision::Show(groups) => {
             let mut number: u32 = 1;
             let mut map: HashMap<u32, PathBuf> = HashMap::new();
             for (group, projects) in groups {
-                writeln!(&mut handle, "in {}:", group.to_string_lossy());
+                writeln!(&mut handle, "in {}:", group.to_string_lossy())?;
                 for project in projects {
                     if let Some(file_name) = project.file_name() {
                         writeln!(
@@ -32,7 +30,7 @@ fn main() {
                             "   {}. {}",
                             number,
                             file_name.to_string_lossy()
-                        );
+                        )?;
                         map.insert(number, project.to_owned());
                         number += 1;
                     }
@@ -43,20 +41,19 @@ fn main() {
                 Ok(line) => {
                     if let Ok(number) = line.parse::<u32>() {
                         if let Some(project) = map.get(&number) {
-                            open(&project);
+                            return open(&project, &mut handle);
                         }
                     }
+                    Ok(())
                 }
-                Err(_) => {}
+                Err(_) => Ok(()),
             }
         }
     }
 }
 
-fn open(path: &Path) {
+fn open(path: &Path, handle: &mut io::StdoutLock) -> io::Result<()> {
     use std::process::Command;
-    Command::new("open")
-        .arg(path)
-        .output()
-        .expect("open a project");
+    let output = Command::new("open").arg(path).output()?;
+    write!(handle, "{}", String::from_utf8_lossy(&output.stderr))
 }
