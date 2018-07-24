@@ -8,6 +8,6 @@ A tool that opens xcode projects from a command line.
 - skips from searching projects under `Pods` or `node_modules` directories unless runs inside them
 - asks which project to open if there are more under current directory
 
-# LICENSE
+## LICENSE
 
 MIT
