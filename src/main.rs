@@ -17,7 +17,7 @@ fn main() -> io::Result<()> {
             &mut handle,
             "No xcworkspace/xcodeproj file found under current directory"
         ),
-        Decision::Open(path) => open(&path, &mut handle),
+        Decision::Open(path) => open(&path),
         Decision::Show(groups) => {
             let mut number: u32 = 1;
             let mut map: HashMap<u32, PathBuf> = HashMap::new();
@@ -41,7 +41,7 @@ fn main() -> io::Result<()> {
                 Ok(line) => {
                     if let Ok(number) = line.parse::<u32>() {
                         if let Some(project) = map.get(&number) {
-                            return open(&project, &mut handle);
+                            return open(&project);
                         }
                     }
                     Ok(())
@@ -52,8 +52,10 @@ fn main() -> io::Result<()> {
     }
 }
 
-fn open(path: &Path, handle: &mut io::StdoutLock) -> io::Result<()> {
+fn open(path: &Path) -> io::Result<()> {
     use std::process::Command;
+    let stderr = io::stderr();
+    let mut handle = stderr.lock();
     let output = Command::new("open").arg(path).output()?;
     write!(handle, "{}", String::from_utf8_lossy(&output.stderr))
 }
