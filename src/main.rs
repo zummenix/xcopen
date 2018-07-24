@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 fn main() -> io::Result<()> {
     let stdout = io::stdout();
     let mut handle = stdout.lock();
-    let root = env::current_dir().expect("an access to a current directory");
+    let root = env::current_dir()?;
     match xcopen::decision(&root) {
         Decision::NoEntries => writeln!(
             &mut handle,
