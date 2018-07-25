@@ -1,6 +1,6 @@
 # xcopen
 
-A tool that opens xcode projects from a command line.
+Opens xcode projects from a command line.
 
 ## Features
 
@@ -13,7 +13,11 @@ A tool that opens xcode projects from a command line.
 The tool is written in Rust, so first you need to make sure that you have the compiler installed.
 If you don't have it, head to https://rustup.rs and follow instructions.
 
-If you have Rust installed, run `cargo install --git "https://github.com/zummenix/xcopen"`
+If you have Rust installed, run:
+
+```bash
+cargo install --git "https://github.com/zummenix/xcopen"
+```
 
 ## Usage
 
