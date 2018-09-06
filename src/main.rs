@@ -1,4 +1,6 @@
 extern crate rustyline;
+#[macro_use]
+extern crate structopt;
 extern crate xcopen;
 
 use xcopen::Decision;
@@ -8,18 +10,28 @@ use std::collections::HashMap;
 use std::env;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
+use structopt::StructOpt;
 
 #[global_allocator]
 static A: System = System;
 
+#[derive(Debug, StructOpt)]
+struct Opt {
+    /// A directory where to search for project files
+    #[structopt(parse(from_os_str))]
+    root: Option<PathBuf>,
+}
+
 fn main() -> io::Result<()> {
+    let opt = Opt::from_args();
+    let root = opt.root.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut handle = stdout.lock();
-    let root = env::current_dir()?;
     match xcopen::decision(&root) {
         Decision::NoEntries => writeln!(
             &mut handle,
-            "No xcworkspace/xcodeproj file found under current directory"
+            "No xcworkspace/xcodeproj file found under '{}'",
+            root.to_string_lossy()
         ),
         Decision::Open(path) => open(&path),
         Decision::Show(groups) => {

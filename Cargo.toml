@@ -2,11 +2,13 @@
 name = "xcopen"
 version = "0.1.0"
 authors = ["Aleksey Kuznetsov <zummenix@gmail.com>"]
+description = "A simple CLI tool to open xcodeproj/xcworkspace files in Xcode"
 
 [dependencies]
 walkdir = "2"
 itertools = "0.7.8"
 rustyline = "1.0"
+structopt = "0.2"
 
 [dev-dependencies]
 expectest = "0.10.0"
