@@ -7,7 +7,7 @@ description = "A simple CLI tool to open xcodeproj/xcworkspace files in Xcode"
 [dependencies]
 walkdir = "2"
 itertools = "0.7.8"
-rustyline = "1.0"
+rustyline = "2.1"
 structopt = "0.2"
 
 [dev-dependencies]
