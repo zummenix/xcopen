@@ -74,8 +74,7 @@ where
             // /Backgrounder/Backgrounder.xcworkspace
             let path = entry.path();
             !(is_xcworkspace(path) && path.parent().map(is_xcodeproj).unwrap_or(false))
-        })
-        .filter_map(|entry| {
+        }).filter_map(|entry| {
             // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
             let path = entry.path();
             if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(&path, dir)) {
@@ -83,8 +82,7 @@ where
             } else {
                 Some(path.to_owned())
             }
-        })
-        .collect()
+        }).collect()
 }
 
 fn is_xcodeproj(path: &Path) -> bool {

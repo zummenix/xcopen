@@ -1,8 +1,8 @@
 [package]
 name = "xcopen"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Aleksey Kuznetsov <zummenix@gmail.com>"]
-description = "A simple CLI tool to open xcodeproj/xcworkspace files in Xcode"
+description = "A convenient way to open xcodeproj/xcworkspace from a command line"
 
 [dependencies]
 walkdir = "2"
