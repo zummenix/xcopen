@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 
-mkdir fixups
-touch fixups/sample.xcodeproj
-touch fixups/sample.xcworkspace
-touch fixups/example.xcodeproj
+# Poor man's tests :)
 
-mkdir fixups/my
-touch fixups/my/sample.xcodeproj
+mkdir fixtures
+touch fixtures/sample.xcodeproj
+touch fixtures/sample.xcworkspace
+touch fixtures/example.xcodeproj
+
+mkdir fixtures/my
+touch fixtures/my/sample.xcodeproj
 
 cargo install -f --path .
 xcopen
 
-rm -rf fixups
+rm -rf fixtures
