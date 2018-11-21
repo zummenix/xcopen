@@ -37,7 +37,7 @@ where
     F: Entry,
 {
     let entries = entries_internal(root, entries_iter);
-    if entries.len() == 0 {
+    if entries.is_empty() {
         Decision::NoEntries
     } else if entries.len() == 1 {
         Decision::Open(entries[0].to_owned())
@@ -73,7 +73,7 @@ where
             // /Backgrounder/Backgrounder.xcodeproj/project.xcworkspace
             // /Backgrounder/Backgrounder.xcworkspace
             let path = entry.path();
-            !(is_xcworkspace(path) && path.parent().map(is_xcodeproj).unwrap_or(false))
+            !(is_xcworkspace(path) && path.parent().map_or(false, is_xcodeproj))
         }).filter_map(|entry| {
             // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
             let path = entry.path();
@@ -94,9 +94,7 @@ fn is_xcworkspace(path: &Path) -> bool {
 }
 
 fn has_extension(path: &Path, extension: &str) -> bool {
-    path.extension()
-        .map(|ext| ext == extension)
-        .unwrap_or(false)
+    path.extension().map_or(false, |ext| ext == extension)
 }
 
 fn has_parent(path: &Path, parent: &str) -> bool {
