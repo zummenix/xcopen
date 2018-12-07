@@ -1,9 +1,3 @@
-#[macro_use(expect)]
-#[cfg(test)]
-extern crate expectest;
-extern crate itertools;
-extern crate walkdir;
-
 use itertools::Itertools;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
@@ -74,7 +68,8 @@ where
             // /Backgrounder/Backgrounder.xcworkspace
             let path = entry.path();
             !(is_xcworkspace(path) && path.parent().map_or(false, is_xcodeproj))
-        }).filter_map(|entry| {
+        })
+        .filter_map(|entry| {
             // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
             let path = entry.path();
             if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(&path, dir)) {
@@ -82,7 +77,8 @@ where
             } else {
                 Some(path.to_owned())
             }
-        }).collect()
+        })
+        .collect()
 }
 
 fn is_xcodeproj(path: &Path) -> bool {
@@ -121,6 +117,7 @@ impl Entry for DirEntry {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use expectest::expect;
     use expectest::prelude::*;
 
     impl Entry for PathBuf {

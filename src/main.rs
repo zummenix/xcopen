@@ -1,7 +1,3 @@
-extern crate rustyline;
-extern crate structopt;
-extern crate xcopen;
-
 use xcopen::Decision;
 
 use std::alloc::System;
