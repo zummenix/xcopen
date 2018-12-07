@@ -436,7 +436,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "xcopen"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "expectest 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)",
