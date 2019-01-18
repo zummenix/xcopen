@@ -1,14 +1,10 @@
 use xcopen::Decision;
 
-use std::alloc::System;
 use std::collections::HashMap;
 use std::env;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
-
-#[global_allocator]
-static A: System = System;
 
 #[derive(Debug, StructOpt)]
 struct Opt {
