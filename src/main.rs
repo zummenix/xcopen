@@ -1,7 +1,9 @@
 use xcopen::Decision;
 
 use std::collections::HashMap;
+use std::convert::From;
 use std::env;
+use std::fmt;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -13,17 +15,16 @@ struct Opt {
     root: Option<PathBuf>,
 }
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     let root = opt.root.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut handle = stdout.lock();
     match xcopen::decision(&root) {
-        Decision::NoEntries => writeln!(
-            &mut handle,
+        Decision::NoEntries => Err(Error::Own(format!(
             "No xcworkspace/xcodeproj file found under '{}'",
             root.to_string_lossy()
-        ),
+        ))),
         Decision::Open(path) => open(&path),
         Decision::Show(groups) => {
             let mut number: u32 = 1;
@@ -44,25 +45,62 @@ fn main() -> io::Result<()> {
                 }
             }
             let mut rl = rustyline::Editor::<()>::new();
-            match rl.readline("Enter the number to open: ") {
-                Ok(line) => {
-                    if let Ok(number) = line.parse::<u32>() {
-                        if let Some(project) = map.get(&number) {
-                            return open(&project);
-                        }
-                    }
-                    Ok(())
-                }
-                Err(_) => Ok(()),
+            let line = rl.readline("Enter the number of the project to open: ")?;
+            let number = line.parse::<u32>().unwrap_or(0);
+            if let Some(path) = map.get(&number) {
+                open(&path)
+            } else {
+                Ok(())
             }
         }
     }
 }
 
-fn open(path: &Path) -> io::Result<()> {
+/// Tries to open xcworkspace/xcodeproj file using `open` tool.
+fn open(path: &Path) -> Result<(), Error> {
     use std::process::Command;
-    let stderr = io::stderr();
-    let mut handle = stderr.lock();
     let output = Command::new("open").arg(path).output()?;
-    write!(handle, "{}", String::from_utf8_lossy(&output.stderr))
+    if output.stderr.is_empty() {
+        Ok(())
+    } else {
+        Err(Error::Own(
+            String::from_utf8_lossy(&output.stderr).to_string(),
+        ))
+    }
+}
+
+/// An error of this CLI.
+enum Error {
+    Io(io::Error),
+    Rl(rustyline::error::ReadlineError),
+    Own(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::Io(io_error) => io_error.fmt(f),
+            Error::Rl(rl_error) => rl_error.fmt(f),
+            Error::Own(error) => f.write_str(&error),
+        }
+    }
+}
+
+impl fmt::Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Implement Debug in terms of Display for nice printing in the console.
+        fmt::Display::fmt(self, f)
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(e: io::Error) -> Error {
+        Error::Io(e)
+    }
+}
+
+impl From<rustyline::error::ReadlineError> for Error {
+    fn from(e: rustyline::error::ReadlineError) -> Error {
+        Error::Rl(e)
+    }
 }
