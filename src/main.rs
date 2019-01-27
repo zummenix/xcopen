@@ -34,7 +34,7 @@ fn main() -> io::Result<()> {
                     if let Some(file_name) = project.file_name() {
                         writeln!(
                             &mut handle,
-                            "   {}. {}",
+                            "    {}. {}",
                             number,
                             file_name.to_string_lossy()
                         )?;
