@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
                             number,
                             file_name.to_string_lossy()
                         )?;
-                        map.insert(number, project.to_owned());
+                        map.insert(number, project);
                         number += 1;
                     }
                 }
