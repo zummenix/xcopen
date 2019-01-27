@@ -39,18 +39,16 @@ where
     if entries.is_empty() {
         DirStatus::NoEntries
     } else if entries.len() == 1 {
-        DirStatus::Project(entries[0].to_owned())
+        DirStatus::Project(entries.into_iter().nth(0).unwrap())
     } else {
         let groups = grouped(entries);
         if groups.len() == 1 && groups[0].1.len() == 2 {
-            let first = groups[0].1[0].to_owned();
-            let second = groups[0].1[1].to_owned();
-            if is_xcodeproj(&first) && is_xcworkspace(&second) {
-                DirStatus::Project(second)
-            } else if is_xcodeproj(&second) && is_xcworkspace(&first) {
-                DirStatus::Project(first)
-            } else {
-                DirStatus::Groups(groups)
+            let first = &groups[0].1[0];
+            let second = &groups[0].1[1];
+            match (is_xcworkspace(&first), is_xcworkspace(&second)) {
+                (true, false) => DirStatus::Project(first.to_owned()),
+                (false, true) => DirStatus::Project(second.to_owned()),
+                (_, _) => DirStatus::Groups(groups),
             }
         } else {
             DirStatus::Groups(groups)
