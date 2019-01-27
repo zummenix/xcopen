@@ -4,16 +4,21 @@ use walkdir::{DirEntry, WalkDir};
 
 const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules"];
 
+/// A status of the directory.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum Decision {
-    Open(PathBuf),
-    Show(Vec<(PathBuf, Vec<PathBuf>)>),
+pub enum DirStatus {
+    /// The directory contains one project.
+    Project(PathBuf),
+    /// The directory contains multiple projects grouped by directories.
+    Groups(Vec<(PathBuf, Vec<PathBuf>)>),
+    /// The directory doesn't have any projects.
     NoEntries,
 }
 
-pub fn decision(root: &Path) -> Decision {
+/// Returns a status of the directory.
+pub fn dir_status(root: &Path) -> DirStatus {
     let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
-    decision_internal(root, iter)
+    dir_status_internal(root, iter)
 }
 
 fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
@@ -25,30 +30,30 @@ fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
         .collect()
 }
 
-fn decision_internal<I, F>(root: &Path, entries_iter: I) -> Decision
+fn dir_status_internal<I, F>(root: &Path, entries_iter: I) -> DirStatus
 where
     I: Iterator<Item = F>,
     F: Entry,
 {
     let entries = entries_internal(root, entries_iter);
     if entries.is_empty() {
-        Decision::NoEntries
+        DirStatus::NoEntries
     } else if entries.len() == 1 {
-        Decision::Open(entries[0].to_owned())
+        DirStatus::Project(entries[0].to_owned())
     } else {
         let groups = grouped(entries);
         if groups.len() == 1 && groups[0].1.len() == 2 {
             let first = groups[0].1[0].to_owned();
             let second = groups[0].1[1].to_owned();
             if is_xcodeproj(&first) && is_xcworkspace(&second) {
-                Decision::Open(second)
+                DirStatus::Project(second)
             } else if is_xcodeproj(&second) && is_xcworkspace(&first) {
-                Decision::Open(first)
+                DirStatus::Project(first)
             } else {
-                Decision::Show(groups)
+                DirStatus::Groups(groups)
             }
         } else {
-            Decision::Show(groups)
+            DirStatus::Groups(groups)
         }
     }
 }
@@ -216,64 +221,64 @@ mod tests {
     }
 
     #[test]
-    fn decision_no_entries_if_without_projects() {
+    fn dir_status_no_entries_if_without_projects() {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/file1")];
-        let result = Decision::NoEntries;
-        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+        let result = DirStatus::NoEntries;
+        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
-    fn decision_open_one_project() {
+    fn dir_status_open_one_project() {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/Sample.xcodeproj")];
-        let result = Decision::Open(PathBuf::from("/projects/my/Sample.xcodeproj"));
-        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+        let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcodeproj"));
+        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
-    fn decision_open_workspace_with_project_first() {
+    fn dir_status_open_workspace_with_project_first() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcodeproj"),
             PathBuf::from("/projects/my/Sample.xcworkspace"),
         ];
-        let result = Decision::Open(PathBuf::from("/projects/my/Sample.xcworkspace"));
-        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+        let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
+        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
-    fn decision_open_workspace_with_project_second() {
+    fn dir_status_open_workspace_with_project_second() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcworkspace"),
             PathBuf::from("/projects/my/Sample.xcodeproj"),
         ];
-        let result = Decision::Open(PathBuf::from("/projects/my/Sample.xcworkspace"));
-        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+        let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
+        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
-    fn decision_show_one_group_three_projects() {
+    fn dir_status_show_one_group_three_projects() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcworkspace"),
             PathBuf::from("/projects/my/Sample.xcodeproj"),
             PathBuf::from("/projects/my/Example.xcodeproj"),
         ];
-        let result = Decision::Show(vec![(PathBuf::from("/projects/my"), input.clone())]);
-        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+        let result = DirStatus::Groups(vec![(PathBuf::from("/projects/my"), input.clone())]);
+        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
     #[test]
-    fn decision_show_multiple_groups() {
+    fn dir_status_show_multiple_groups() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcworkspace"),
             PathBuf::from("/projects/my/Sample.xcodeproj"),
             PathBuf::from("/projects/my/example/Example.xcodeproj"),
         ];
-        let result = Decision::Show(vec![
+        let result = DirStatus::Groups(vec![
             (
                 PathBuf::from("/projects/my"),
                 vec![
@@ -286,6 +291,6 @@ mod tests {
                 vec![PathBuf::from("/projects/my/example/Example.xcodeproj")],
             ),
         ]);
-        expect!(decision_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 }

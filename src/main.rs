@@ -1,4 +1,4 @@
-use xcopen::Decision;
+use xcopen::DirStatus;
 
 use std::collections::HashMap;
 use std::convert::From;
@@ -20,13 +20,13 @@ fn main() -> Result<(), Error> {
     let root = opt.root.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut handle = stdout.lock();
-    match xcopen::decision(&root) {
-        Decision::NoEntries => Err(Error::Own(format!(
+    match xcopen::dir_status(&root) {
+        DirStatus::NoEntries => Err(Error::Own(format!(
             "No xcworkspace/xcodeproj file found under '{}'",
             root.to_string_lossy()
         ))),
-        Decision::Open(path) => open(&path),
-        Decision::Show(groups) => {
+        DirStatus::Project(path) => open(&path),
+        DirStatus::Groups(groups) => {
             let mut number: u32 = 1;
             let mut map: HashMap<u32, PathBuf> = HashMap::new();
             for (group, projects) in groups {
