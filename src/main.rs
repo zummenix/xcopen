@@ -59,14 +59,8 @@ fn main() -> Result<(), Error> {
 /// Tries to open xcworkspace/xcodeproj file using `open` tool.
 fn open(path: &Path) -> Result<(), Error> {
     use std::process::Command;
-    let output = Command::new("open").arg(path).output()?;
-    if output.stderr.is_empty() {
-        Ok(())
-    } else {
-        Err(Error::Own(
-            String::from_utf8_lossy(&output.stderr).to_string(),
-        ))
-    }
+    Command::new("open").arg(path).spawn()?.wait()?;
+    Ok(())
 }
 
 /// An error of this CLI.
