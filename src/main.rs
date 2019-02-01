@@ -19,7 +19,7 @@ fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
     let root = opt.root.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
-    let mut handle = stdout.lock();
+    let mut stdout = stdout.lock();
     match xcopen::dir_status(&root) {
         DirStatus::NoEntries => Err(Error::Own(format!(
             "No xcworkspace/xcodeproj file found under '{}'",
@@ -28,30 +28,29 @@ fn main() -> Result<(), Error> {
         DirStatus::Project(path) => open(&path),
         DirStatus::Groups(groups) => {
             let mut number: u32 = 1;
-            let mut map: HashMap<u32, PathBuf> = HashMap::new();
+            let mut projects_map: HashMap<u32, PathBuf> = HashMap::new();
             for (group, projects) in groups {
-                writeln!(&mut handle, "in {}:", group.to_string_lossy())?;
+                writeln!(&mut stdout, "in {}:", group.to_string_lossy())?;
                 for project in projects {
                     if let Some(file_name) = project.file_name() {
                         writeln!(
-                            &mut handle,
+                            &mut stdout,
                             "    {}. {}",
                             number,
                             file_name.to_string_lossy()
                         )?;
-                        map.insert(number, project);
+                        projects_map.insert(number, project);
                         number += 1;
                     }
                 }
             }
             let mut rl = rustyline::Editor::<()>::new();
             let line = rl.readline("Enter the number of the project to open: ")?;
-            let number = line.parse::<u32>().unwrap_or(0);
-            if let Some(path) = map.get(&number) {
-                open(&path)
-            } else {
-                Ok(())
-            }
+            line.parse::<u32>()
+                .ok()
+                .and_then(|number| projects_map.get(&number))
+                .map(|path| open(path))
+                .unwrap_or(Ok(()))
         }
     }
 }
@@ -66,16 +65,16 @@ fn open(path: &Path) -> Result<(), Error> {
 /// An error of this CLI.
 enum Error {
     Io(io::Error),
-    Rl(rustyline::error::ReadlineError),
+    Rustyline(rustyline::error::ReadlineError),
     Own(String),
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Error::Io(io_error) => io_error.fmt(f),
-            Error::Rl(rl_error) => rl_error.fmt(f),
-            Error::Own(error) => f.write_str(&error),
+            Error::Io(e) => e.fmt(f),
+            Error::Rustyline(e) => e.fmt(f),
+            Error::Own(e) => f.write_str(&e),
         }
     }
 }
@@ -95,6 +94,6 @@ impl From<io::Error> for Error {
 
 impl From<rustyline::error::ReadlineError> for Error {
     fn from(e: rustyline::error::ReadlineError) -> Error {
-        Error::Rl(e)
+        Error::Rustyline(e)
     }
 }
