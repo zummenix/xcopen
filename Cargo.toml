@@ -7,12 +7,12 @@ edition = "2018"
 
 [dependencies]
 walkdir = "2"
-itertools = "0.7.8"
-rustyline = "2.1"
+itertools = "0.8"
+rustyline = "3.0"
 structopt = "0.2"
 
 [dev-dependencies]
-expectest = "0.10.0"
+expectest = "0.11"
 
 [profile.release]
 panic = "abort"
