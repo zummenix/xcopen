@@ -49,16 +49,16 @@ fn main() -> Result<(), Error> {
             line.parse::<u32>()
                 .ok()
                 .and_then(|number| projects_map.get(&number))
-                .map(|path| open(path))
+                .map(open)
                 .unwrap_or(Ok(()))
         }
     }
 }
 
 /// Tries to open xcworkspace/xcodeproj file using `open` tool.
-fn open(path: &Path) -> Result<(), Error> {
+fn open(path: impl AsRef<Path>) -> Result<(), Error> {
     use std::process::Command;
-    Command::new("open").arg(path).spawn()?.wait()?;
+    Command::new("open").arg(path.as_ref()).spawn()?.wait()?;
     Ok(())
 }
 
