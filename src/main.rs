@@ -70,7 +70,7 @@ enum Error {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::Io(e) => e.fmt(f),
             Error::Rustyline(e) => e.fmt(f),
@@ -80,7 +80,7 @@ impl fmt::Display for Error {
 }
 
 impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Implement Debug in terms of Display for nice printing in the console.
         fmt::Display::fmt(self, f)
     }
