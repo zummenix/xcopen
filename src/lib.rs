@@ -17,7 +17,7 @@ pub enum DirStatus {
 
 /// Returns a status of the directory.
 pub fn dir_status(root: &Path) -> DirStatus {
-    let iter = WalkDir::new(root).into_iter().filter_map(|e| e.ok());
+    let iter = WalkDir::new(root).into_iter().filter_map(Result::ok);
     dir_status_internal(root, iter)
 }
 

@@ -49,8 +49,7 @@ fn main() -> Result<(), Error> {
             line.parse::<u32>()
                 .ok()
                 .and_then(|number| projects_map.get(&number))
-                .map(open)
-                .unwrap_or(Ok(()))
+                .map_or(Ok(()), open)
         }
     }
 }
@@ -87,13 +86,13 @@ impl fmt::Debug for Error {
 }
 
 impl From<io::Error> for Error {
-    fn from(e: io::Error) -> Error {
+    fn from(e: io::Error) -> Self {
         Error::Io(e)
     }
 }
 
 impl From<rustyline::error::ReadlineError> for Error {
-    fn from(e: rustyline::error::ReadlineError) -> Error {
+    fn from(e: rustyline::error::ReadlineError) -> Self {
         Error::Rustyline(e)
     }
 }
