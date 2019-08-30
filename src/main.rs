@@ -9,21 +9,22 @@ use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
+#[structopt(author, about)]
 struct Opt {
-    /// A directory where to search for project files
+    /// A directory where to start search for project files
     #[structopt(parse(from_os_str))]
-    root: Option<PathBuf>,
+    dir: Option<PathBuf>,
 }
 
 fn main() -> Result<(), Error> {
     let opt = Opt::from_args();
-    let root = opt.root.unwrap_or(env::current_dir()?);
+    let dir = opt.dir.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    match xcopen::dir_status(&root) {
+    match xcopen::dir_status(&dir) {
         DirStatus::NoEntries => Err(Error::Own(format!(
             "No xcworkspace/xcodeproj file found under '{}'",
-            root.to_string_lossy()
+            dir.to_string_lossy()
         ))),
         DirStatus::Project(path) => open(&path),
         DirStatus::Groups(groups) => {

@@ -9,7 +9,7 @@ edition = "2018"
 walkdir = "2"
 itertools = "0.8"
 rustyline = "5.0"
-structopt = "0.2"
+structopt = "0.3"
 
 [dev-dependencies]
 expectest = "0.11"
