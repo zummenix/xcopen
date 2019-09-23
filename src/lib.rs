@@ -2,7 +2,7 @@ use itertools::Itertools;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
-const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules"];
+const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build"];
 
 /// A status of the directory.
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -165,6 +165,28 @@ mod tests {
             PathBuf::from("/projects/my/Pods/some.txt"),
         ];
         let result = vec![PathBuf::from("/projects/my/Pods/Pods.xcodeproj")];
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn excludes_dot_build_directory() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![
+            PathBuf::from("/projects/my/.build/Example.xcodeproj"),
+            PathBuf::from("/projects/my/App.xcworkspace"),
+        ];
+        let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
+        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn includes_dot_build_directory() {
+        let root = PathBuf::from("/projects/my/.build");
+        let input = vec![
+            PathBuf::from("/projects/my/.build/Example.xcodeproj"),
+            PathBuf::from("/projects/my/.build/some.txt"),
+        ];
+        let result = vec![PathBuf::from("/projects/my/.build/Example.xcodeproj")];
         expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
     }
 
