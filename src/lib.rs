@@ -18,7 +18,7 @@ pub enum DirStatus {
 /// Returns a status of the directory.
 pub fn dir_status(root: &Path) -> DirStatus {
     let iter = WalkDir::new(root).into_iter().filter_map(Result::ok);
-    dir_status_internal(root, iter)
+    dir_status_internal(root, iter, SPECIAL_DIRS)
 }
 
 fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
@@ -30,12 +30,12 @@ fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
         .collect()
 }
 
-fn dir_status_internal<I, F>(root: &Path, entries_iter: I) -> DirStatus
+fn dir_status_internal<I, F>(root: &Path, entries_iter: I, special_dirs: &[&str]) -> DirStatus
 where
     I: Iterator<Item = F>,
     F: Entry,
 {
-    let entries = entries_internal(root, entries_iter);
+    let entries = entries_internal(root, entries_iter, special_dirs);
     if entries.is_empty() {
         DirStatus::NoEntries
     } else if entries.len() == 1 {
@@ -56,12 +56,12 @@ where
     }
 }
 
-fn entries_internal<I, F>(root: &Path, entries_iter: I) -> Vec<PathBuf>
+fn entries_internal<I, F>(root: &Path, entries_iter: I, special_dirs: &[&str]) -> Vec<PathBuf>
 where
     I: Iterator<Item = F>,
     F: Entry,
 {
-    let root_is_special = SPECIAL_DIRS.iter().any(|dir| has_parent(root, dir));
+    let root_is_special = special_dirs.iter().any(|dir| has_parent(root, dir));
     entries_iter
         .filter(|entry| is_xcodeproj(entry.path()) || is_xcworkspace(entry.path()))
         .filter(|entry| {
@@ -75,7 +75,7 @@ where
         .filter_map(|entry| {
             // Skip any paths that contain a "special dir" iff a root path doesn't contain it.
             let path = entry.path();
-            if !root_is_special && SPECIAL_DIRS.iter().any(|dir| has_parent(&path, dir)) {
+            if !root_is_special && special_dirs.iter().any(|dir| has_parent(&path, dir)) {
                 None
             } else {
                 Some(path.to_owned())
@@ -143,78 +143,29 @@ mod tests {
             PathBuf::from("/projects/my/App.xcodeproj"),
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
     #[test]
-    fn excludes_pods_directory() {
+    fn excludes_special_directory() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Pods/Pods.xcodeproj"),
             PathBuf::from("/projects/my/App.xcworkspace"),
         ];
         let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
     }
 
     #[test]
-    fn includes_pods_directory() {
+    fn includes_special_directory() {
         let root = PathBuf::from("/projects/my/Pods");
         let input = vec![
             PathBuf::from("/projects/my/Pods/Pods.xcodeproj"),
             PathBuf::from("/projects/my/Pods/some.txt"),
         ];
         let result = vec![PathBuf::from("/projects/my/Pods/Pods.xcodeproj")];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn excludes_dot_build_directory() {
-        let root = PathBuf::from("/projects/my");
-        let input = vec![
-            PathBuf::from("/projects/my/.build/Example.xcodeproj"),
-            PathBuf::from("/projects/my/App.xcworkspace"),
-        ];
-        let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn includes_dot_build_directory() {
-        let root = PathBuf::from("/projects/my/.build");
-        let input = vec![
-            PathBuf::from("/projects/my/.build/Example.xcodeproj"),
-            PathBuf::from("/projects/my/.build/some.txt"),
-        ];
-        let result = vec![PathBuf::from("/projects/my/.build/Example.xcodeproj")];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn excludes_node_modules_directory() {
-        let root = PathBuf::from("/projects/my");
-        let input = vec![
-            PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
-            PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
-            PathBuf::from("/projects/my/App.xcworkspace"),
-        ];
-        let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn includes_node_modules_directory() {
-        let root = PathBuf::from("/projects/my/node_modules");
-        let input = vec![
-            PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
-            PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
-            PathBuf::from("/projects/my/node_modules/some.txt"),
-        ];
-        let result = vec![
-            PathBuf::from("/projects/my/node_modules/react-native/Libraries/Sample.xcodeproj"),
-            PathBuf::from("/projects/my/node_modules/react-native/Libraries/RCTLinking.xcodeproj"),
-        ];
-        expect!(entries_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(entries_internal(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
     }
 
     #[test]
@@ -245,7 +196,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/file1")];
         let result = DirStatus::NoEntries;
-        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
     #[test]
@@ -253,7 +204,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/Sample.xcodeproj")];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcodeproj"));
-        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
     #[test]
@@ -264,7 +215,7 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcworkspace"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
-        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
     #[test]
@@ -275,7 +226,7 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcodeproj"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
-        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
     #[test]
@@ -287,7 +238,7 @@ mod tests {
             PathBuf::from("/projects/my/Example.xcodeproj"),
         ];
         let result = DirStatus::Groups(vec![(PathBuf::from("/projects/my"), input.clone())]);
-        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
     #[test]
@@ -311,6 +262,6 @@ mod tests {
                 vec![PathBuf::from("/projects/my/example/Example.xcodeproj")],
             ),
         ]);
-        expect!(dir_status_internal(&root, input.into_iter())).to(be_equal_to(result));
+        expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 }
