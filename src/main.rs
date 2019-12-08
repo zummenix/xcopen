@@ -72,9 +72,9 @@ enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Error::Io(e) => e.fmt(f),
-            Error::Rustyline(e) => e.fmt(f),
-            Error::Own(e) => f.write_str(&e),
+            Self::Io(e) => e.fmt(f),
+            Self::Rustyline(e) => e.fmt(f),
+            Self::Own(e) => f.write_str(&e),
         }
     }
 }
@@ -88,12 +88,12 @@ impl fmt::Debug for Error {
 
 impl From<io::Error> for Error {
     fn from(e: io::Error) -> Self {
-        Error::Io(e)
+        Self::Io(e)
     }
 }
 
 impl From<rustyline::error::ReadlineError> for Error {
     fn from(e: rustyline::error::ReadlineError) -> Self {
-        Error::Rustyline(e)
+        Self::Rustyline(e)
     }
 }
