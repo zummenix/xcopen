@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cargo install --force --path .
+cargo install --path .
 
 XCOPEN_PATH=$(which xcopen)
 echo "Binary size before strip:"
