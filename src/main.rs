@@ -1,9 +1,8 @@
 use xcopen::DirStatus;
 
 use std::collections::HashMap;
-use std::convert::From;
 use std::env;
-use std::fmt;
+use std::error;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -16,16 +15,17 @@ struct Opt {
     dir: Option<PathBuf>,
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), Box<dyn error::Error>> {
     let opt = Opt::from_args();
     let dir = opt.dir.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
     match xcopen::dir_status(&dir) {
-        DirStatus::NoEntries => Err(Error::Own(format!(
-            "No xcworkspace/xcodeproj file found under '{}'",
+        DirStatus::NoEntries => Err(format!(
+            "No xcworkspace/xcodeproj file found under {}",
             dir.to_string_lossy()
-        ))),
+        )
+        .into()),
         DirStatus::Project(path) => open(&path),
         DirStatus::Groups(groups) => {
             let mut number: u32 = 1;
@@ -56,44 +56,8 @@ fn main() -> Result<(), Error> {
 }
 
 /// Tries to open xcworkspace/xcodeproj file using `open` tool.
-fn open(path: impl AsRef<Path>) -> Result<(), Error> {
+fn open(path: impl AsRef<Path>) -> Result<(), Box<dyn error::Error>> {
     use std::process::Command;
     Command::new("open").arg(path.as_ref()).spawn()?.wait()?;
     Ok(())
-}
-
-/// An error of this CLI.
-enum Error {
-    Io(io::Error),
-    Rustyline(rustyline::error::ReadlineError),
-    Own(String),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Io(e) => e.fmt(f),
-            Self::Rustyline(e) => e.fmt(f),
-            Self::Own(e) => f.write_str(&e),
-        }
-    }
-}
-
-impl fmt::Debug for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Implement Debug in terms of Display for nice printing in the console.
-        fmt::Display::fmt(self, f)
-    }
-}
-
-impl From<io::Error> for Error {
-    fn from(e: io::Error) -> Self {
-        Self::Io(e)
-    }
-}
-
-impl From<rustyline::error::ReadlineError> for Error {
-    fn from(e: rustyline::error::ReadlineError) -> Self {
-        Self::Rustyline(e)
-    }
 }
