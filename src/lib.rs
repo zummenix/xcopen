@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
@@ -10,7 +11,7 @@ pub enum DirStatus {
     /// The directory contains one project.
     Project(PathBuf),
     /// The directory contains multiple projects grouped by directories.
-    Groups(Vec<(PathBuf, Vec<PathBuf>)>),
+    Groups(HashMap<PathBuf, Vec<PathBuf>>),
     /// The directory doesn't have any projects.
     NoEntries,
 }
@@ -21,13 +22,11 @@ pub fn dir_status(root: &Path) -> DirStatus {
     dir_status_internal(root, iter, SPECIAL_DIRS)
 }
 
-fn grouped(entries: Vec<PathBuf>) -> Vec<(PathBuf, Vec<PathBuf>)> {
+fn grouped(entries: Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>> {
     entries
         .into_iter()
-        .group_by(|entry| entry.parent().unwrap().to_owned())
-        .into_iter()
-        .map(|(key, group)| (key, group.collect()))
-        .collect()
+        .map(|entry| (entry.parent().unwrap().to_owned(), entry))
+        .into_group_map()
 }
 
 fn dir_status_internal<I, F>(root: &Path, entries_iter: I, special_dirs: &[&str]) -> DirStatus
@@ -42,13 +41,14 @@ where
         DirStatus::Project(entries.into_iter().nth(0).unwrap())
     } else {
         let groups = grouped(entries);
-        if groups.len() == 1 && groups[0].1.len() == 2 {
-            let first = &groups[0].1[0];
-            let second = &groups[0].1[1];
-            match (is_xcworkspace(&first), is_xcworkspace(&second)) {
-                (true, false) => DirStatus::Project(first.to_owned()),
-                (false, true) => DirStatus::Project(second.to_owned()),
-                (_, _) => DirStatus::Groups(groups),
+        if groups.len() == 1 {
+            match groups.iter().next().unwrap().1.as_slice() {
+                [first, second] => match (is_xcworkspace(&first), is_xcworkspace(&second)) {
+                    (true, false) => DirStatus::Project(first.to_owned()),
+                    (false, true) => DirStatus::Project(second.to_owned()),
+                    (_, _) => DirStatus::Groups(groups),
+                },
+                _ => DirStatus::Groups(groups),
             }
         } else {
             DirStatus::Groups(groups)
@@ -172,8 +172,8 @@ mod tests {
     fn groups_entries_by_parent_directory() {
         let input = vec![
             PathBuf::from("/projects/my/one/file1"),
-            PathBuf::from("/projects/my/one/file2"),
             PathBuf::from("/projects/my/file0"),
+            PathBuf::from("/projects/my/one/file2"),
         ];
         let result = vec![
             (
@@ -187,7 +187,9 @@ mod tests {
                 PathBuf::from("/projects/my"),
                 vec![PathBuf::from("/projects/my/file0")],
             ),
-        ];
+        ]
+        .into_iter()
+        .collect();
         expect!(grouped(input)).to(be_equal_to(result));
     }
 
@@ -237,7 +239,11 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcodeproj"),
             PathBuf::from("/projects/my/Example.xcodeproj"),
         ];
-        let result = DirStatus::Groups(vec![(PathBuf::from("/projects/my"), input.clone())]);
+        let result = DirStatus::Groups(
+            vec![(PathBuf::from("/projects/my"), input.clone())]
+                .into_iter()
+                .collect(),
+        );
         expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 
@@ -249,19 +255,23 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcodeproj"),
             PathBuf::from("/projects/my/example/Example.xcodeproj"),
         ];
-        let result = DirStatus::Groups(vec![
-            (
-                PathBuf::from("/projects/my"),
-                vec![
-                    PathBuf::from("/projects/my/Sample.xcworkspace"),
-                    PathBuf::from("/projects/my/Sample.xcodeproj"),
-                ],
-            ),
-            (
-                PathBuf::from("/projects/my/example"),
-                vec![PathBuf::from("/projects/my/example/Example.xcodeproj")],
-            ),
-        ]);
+        let result = DirStatus::Groups(
+            vec![
+                (
+                    PathBuf::from("/projects/my"),
+                    vec![
+                        PathBuf::from("/projects/my/Sample.xcworkspace"),
+                        PathBuf::from("/projects/my/Sample.xcodeproj"),
+                    ],
+                ),
+                (
+                    PathBuf::from("/projects/my/example"),
+                    vec![PathBuf::from("/projects/my/example/Example.xcodeproj")],
+                ),
+            ]
+            .into_iter()
+            .collect(),
+        );
         expect!(dir_status_internal(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 }
