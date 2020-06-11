@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use walkdir::{DirEntry, WalkDir};
 
-const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build"];
+const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage"];
 
 /// A status of the directory.
 #[derive(Debug, Eq, PartialEq, Clone)]
