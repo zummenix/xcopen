@@ -38,7 +38,7 @@ where
     if entries.is_empty() {
         DirStatus::NoEntries
     } else if entries.len() == 1 {
-        DirStatus::Project(entries.into_iter().nth(0).unwrap())
+        DirStatus::Project(entries.into_iter().next().unwrap())
     } else {
         let groups = grouped(entries);
         if groups.len() == 1 {
