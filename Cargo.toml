@@ -15,5 +15,7 @@ structopt = "0.3"
 expectest = "0.12"
 
 [profile.release]
+opt-level = "z"
+codegen-units = 1
 panic = "abort"
 lto = true
