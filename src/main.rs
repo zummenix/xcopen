@@ -32,8 +32,9 @@ fn main() -> Result<(), Box<dyn error::Error>> {
             let mut projects_map: HashMap<u32, PathBuf> = HashMap::new();
             let mut sorted_groups = groups.into_iter().collect::<Vec<_>>();
             sorted_groups.sort_by(|a, b| a.0.cmp(&b.0));
-            for (group, projects) in sorted_groups {
+            for (group, mut projects) in sorted_groups {
                 writeln!(&mut stdout, "in {}:", group.to_string_lossy())?;
+                projects.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
                 for project in projects {
                     if let Some(file_name) = project.file_name() {
                         writeln!(
