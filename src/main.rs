@@ -2,7 +2,6 @@ use xcopen::DirStatus;
 
 use std::collections::HashMap;
 use std::env;
-use std::error;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
@@ -15,7 +14,7 @@ struct Opt {
     dir: Option<PathBuf>,
 }
 
-fn main() -> Result<(), Box<dyn error::Error>> {
+fn main() -> Result<(), main_error::MainError> {
     let opt = Opt::from_args();
     let dir = opt.dir.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
@@ -59,7 +58,7 @@ fn main() -> Result<(), Box<dyn error::Error>> {
 }
 
 /// Tries to open xcworkspace/xcodeproj file using `open` tool.
-fn open(path: impl AsRef<Path>) -> Result<(), Box<dyn error::Error>> {
+fn open(path: impl AsRef<Path>) -> Result<(), main_error::MainError> {
     use std::process::Command;
     Command::new("open").arg(path.as_ref()).spawn()?.wait()?;
     Ok(())
