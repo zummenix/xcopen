@@ -8,7 +8,7 @@ edition = "2018"
 [dependencies]
 walkdir = "2"
 itertools = "0.9"
-rustyline = "6.3"
+rustyline = "7.0"
 structopt = "0.3"
 main_error = "0.1"
 
