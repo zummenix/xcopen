@@ -53,7 +53,7 @@ where
 {
     let root_is_special = special_dirs.iter().any(|dir| has_parent(root, dir));
     entries_iter
-        .filter(|entry| is_xcodeproj(&entry) || is_xcworkspace(&entry))
+        .filter(|entry| is_xcodeproj(&entry) || is_xcworkspace(&entry) || is_package(&entry))
         .filter(|entry| {
             // Skip workspaces under xcodeproj, example:
             // /Backgrounder/Backgrounder.xcodeproj
@@ -78,6 +78,11 @@ fn is_xcodeproj(path: &Path) -> bool {
 
 fn is_xcworkspace(path: &Path) -> bool {
     has_extension(path, "xcworkspace")
+}
+
+fn is_package(path: &Path) -> bool {
+    path.file_name()
+        .map_or(false, |name| name == "Package.swift")
 }
 
 fn has_extension(path: &Path, extension: &str) -> bool {
@@ -152,6 +157,14 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcodeproj"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
+        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn dir_status_open_package() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![PathBuf::from("/projects/my/Package.swift")];
+        let result = DirStatus::Project(PathBuf::from("/projects/my/Package.swift"));
         expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
     }
 

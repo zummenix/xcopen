@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 use structopt::StructOpt;
 use walkdir::WalkDir;
 
-const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage"];
+const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage", ".swiftpm"];
 
 #[derive(Debug, StructOpt)]
 #[structopt(author, about)]
