@@ -5,6 +5,9 @@ use std::env;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 use structopt::StructOpt;
+use walkdir::WalkDir;
+
+const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage"];
 
 #[derive(Debug, StructOpt)]
 #[structopt(author, about)]
@@ -19,7 +22,11 @@ fn main() -> Result<(), main_error::MainError> {
     let dir = opt.dir.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut stdout = stdout.lock();
-    match xcopen::dir_status(&dir) {
+    let entries_iter = WalkDir::new(&dir)
+        .into_iter()
+        .filter_map(Result::ok)
+        .map(|dir_entry| dir_entry.into_path());
+    match xcopen::dir_status(&dir, entries_iter, &SPECIAL_DIRS) {
         DirStatus::NoEntries => Err(format!(
             "No xcworkspace/xcodeproj file found under {}",
             dir.to_string_lossy()
