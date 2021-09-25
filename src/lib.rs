@@ -143,6 +143,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcodeproj"),
+            PathBuf::from("/projects/my/Sample.xcodeproj/project.xcworkspace"),
             PathBuf::from("/projects/my/Sample.xcworkspace"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
@@ -154,6 +155,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcworkspace"),
+            PathBuf::from("/projects/my/Sample.xcodeproj/project.xcworkspace"),
             PathBuf::from("/projects/my/Sample.xcodeproj"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
