@@ -102,71 +102,7 @@ mod tests {
     use expectest::prelude::*;
 
     #[test]
-    fn filters_out_project_and_workspace_files() {
-        let root = PathBuf::from("/projects/my");
-        let input = vec![
-            PathBuf::from("/projects/my/examples"),
-            PathBuf::from("/projects/my/some.txt"),
-            PathBuf::from("/projects/my/App.xcodeproj"),
-            PathBuf::from("/projects/my/App.xcodeproj/project.xcworkspace"),
-            PathBuf::from("/projects/my/App.xcworkspace"),
-        ];
-        let result = vec![
-            PathBuf::from("/projects/my/App.xcodeproj"),
-            PathBuf::from("/projects/my/App.xcworkspace"),
-        ];
-        expect!(filter_entries(&root, input.into_iter(), &[])).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn excludes_special_directory() {
-        let root = PathBuf::from("/projects/my");
-        let input = vec![
-            PathBuf::from("/projects/my/Pods/Pods.xcodeproj"),
-            PathBuf::from("/projects/my/App.xcworkspace"),
-        ];
-        let result = vec![PathBuf::from("/projects/my/App.xcworkspace")];
-        expect!(filter_entries(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn includes_special_directory() {
-        let root = PathBuf::from("/projects/my/Pods");
-        let input = vec![
-            PathBuf::from("/projects/my/Pods/Pods.xcodeproj"),
-            PathBuf::from("/projects/my/Pods/some.txt"),
-        ];
-        let result = vec![PathBuf::from("/projects/my/Pods/Pods.xcodeproj")];
-        expect!(filter_entries(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn groups_entries_by_parent_directory() {
-        let input = vec![
-            PathBuf::from("/projects/my/one/file1"),
-            PathBuf::from("/projects/my/file0"),
-            PathBuf::from("/projects/my/one/file2"),
-        ];
-        let result = vec![
-            (
-                PathBuf::from("/projects/my/one"),
-                vec![
-                    PathBuf::from("/projects/my/one/file1"),
-                    PathBuf::from("/projects/my/one/file2"),
-                ],
-            ),
-            (
-                PathBuf::from("/projects/my"),
-                vec![PathBuf::from("/projects/my/file0")],
-            ),
-        ]
-        .into_iter()
-        .collect();
-        expect!(grouped(input)).to(be_equal_to(result));
-    }
-
-    #[test]
-    fn dir_status_no_entries_if_without_projects() {
+    fn dir_status_is_no_entries_without_projects() {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/file1")];
         let result = DirStatus::NoEntries;
@@ -174,7 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn dir_status_open_one_project() {
+    fn dir_status_is_open_for_one_project() {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/Sample.xcodeproj")];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcodeproj"));
@@ -182,7 +118,23 @@ mod tests {
     }
 
     #[test]
-    fn dir_status_open_workspace_with_project_first() {
+    fn dir_status_is_open_for_one_project_inside_excluded_directory() {
+        let root = PathBuf::from("/projects/my/Pods");
+        let input = vec![PathBuf::from("/projects/my/Pods/Sample.xcodeproj")];
+        let result = DirStatus::Project(PathBuf::from("/projects/my/Pods/Sample.xcodeproj"));
+        expect!(dir_status(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn dir_status_is_no_entries_for_excluded_directory() {
+        let root = PathBuf::from("/projects/my");
+        let input = vec![PathBuf::from("/projects/my/Pods/Sample.xcodeproj")];
+        let result = DirStatus::NoEntries;
+        expect!(dir_status(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
+    }
+
+    #[test]
+    fn dir_status_is_open_workspace_if_xcodeproj_exists_first() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcodeproj"),
@@ -193,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn dir_status_open_workspace_with_project_second() {
+    fn dir_status_open_workspace_if_xcodeproj_exists_second() {
         let root = PathBuf::from("/projects/my");
         let input = vec![
             PathBuf::from("/projects/my/Sample.xcworkspace"),
