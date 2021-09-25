@@ -1,12 +1,14 @@
 # xcopen
 
-A convenient way to open xcodeproj/xcworkspace from a command line.
+A convenient way to open xcode project files from a command line.
 
 ## Features
 
 - knows about `xcodeproj`/`xcworkspace` files and prefers `xcworkspace` by default
-- skips searching projects under `Pods` or `node_modules` directories unless runs inside them
-- asks which project to open if there are more under a current directory
+- supports `Package.swift`
+- skips projects files under specific directories such as `Pods`, `node_modules`, etc. unless runs
+  inside them
+- asks which project to open if there are several under a current directory
 
 ## Installation
 
