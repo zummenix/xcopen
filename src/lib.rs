@@ -103,15 +103,13 @@ fn has_parent(path: &Path, parent: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use expectest::expect;
-    use expectest::prelude::*;
 
     #[test]
     fn dir_status_is_no_entries_without_projects() {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/file1")];
         let result = DirStatus::NoEntries;
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 
     #[test]
@@ -119,7 +117,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/Sample.xcodeproj")];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcodeproj"));
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 
     #[test]
@@ -127,7 +125,7 @@ mod tests {
         let root = PathBuf::from("/projects/my/Pods");
         let input = vec![PathBuf::from("/projects/my/Pods/Sample.xcodeproj")];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Pods/Sample.xcodeproj"));
-        expect!(dir_status(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &["Pods"]), result);
     }
 
     #[test]
@@ -135,7 +133,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/Pods/Sample.xcodeproj")];
         let result = DirStatus::NoEntries;
-        expect!(dir_status(&root, input.into_iter(), &["Pods"])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &["Pods"]), result);
     }
 
     #[test]
@@ -147,7 +145,7 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcworkspace"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 
     #[test]
@@ -159,7 +157,7 @@ mod tests {
             PathBuf::from("/projects/my/Sample.xcodeproj"),
         ];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Sample.xcworkspace"));
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 
     #[test]
@@ -167,7 +165,7 @@ mod tests {
         let root = PathBuf::from("/projects/my");
         let input = vec![PathBuf::from("/projects/my/Package.swift")];
         let result = DirStatus::Project(PathBuf::from("/projects/my/Package.swift"));
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 
     #[test]
@@ -183,7 +181,7 @@ mod tests {
                 .into_iter()
                 .collect(),
         );
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 
     #[test]
@@ -211,6 +209,6 @@ mod tests {
             .into_iter()
             .collect(),
         );
-        expect!(dir_status(&root, input.into_iter(), &[])).to(be_equal_to(result));
+        assert_eq!(dir_status(&root, input.into_iter(), &[]), result);
     }
 }

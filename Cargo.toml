@@ -12,9 +12,6 @@ rustyline = "9.0"
 structopt = "0.3"
 main_error = "0.1"
 
-[dev-dependencies]
-expectest = "0.12"
-
 [profile.release]
 opt-level = "z"
 codegen-units = 1

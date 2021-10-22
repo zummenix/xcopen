@@ -116,15 +116,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "expectest"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78817c0b64aab8153fbd7532339fbac1a54e43c715802715a288163ca6024978"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "fd-lock"
 version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -235,15 +226,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "memoffset",
-]
-
-[[package]]
-name = "num-traits"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
-dependencies = [
- "autocfg",
 ]
 
 [[package]]
@@ -506,7 +488,6 @@ checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
 name = "xcopen"
 version = "0.7.0"
 dependencies = [
- "expectest",
  "itertools",
  "main_error",
  "rustyline",
