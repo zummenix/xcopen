@@ -3,7 +3,7 @@ name = "xcopen"
 version = "0.7.0"
 authors = ["Aleksey Kuznetsov <zummenix@gmail.com>"]
 description = "A convenient way to open xcodeproj/xcworkspace from a command line"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 walkdir = "2"
