@@ -1,24 +1,24 @@
 use xcopen::DirStatus;
 
+use clap::Parser;
 use std::collections::HashMap;
 use std::env;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 use walkdir::WalkDir;
 
 const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage", ".swiftpm"];
 
-#[derive(Debug, StructOpt)]
-#[structopt(author, about)]
+#[derive(Debug, Parser)]
+#[clap(author, about)]
 struct Opt {
     /// A directory where to start search for project files
-    #[structopt(parse(from_os_str))]
+    #[clap(parse(from_os_str))]
     dir: Option<PathBuf>,
 }
 
 fn main() -> Result<(), main_error::MainError> {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let dir = opt.dir.unwrap_or(env::current_dir()?);
     let stdout = io::stdout();
     let mut stdout = stdout.lock();

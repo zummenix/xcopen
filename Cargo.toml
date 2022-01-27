@@ -9,7 +9,7 @@ edition = "2021"
 walkdir = "2"
 itertools = "0.10"
 rustyline = "9.1"
-structopt = "0.3"
+clap = { version = "3", features = ["derive"] }
 main_error = "0.1"
 
 [profile.release]
