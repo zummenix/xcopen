@@ -1,6 +1,6 @@
 [package]
 name = "xcopen"
-version = "0.8.0"
+version = "0.9.0"
 authors = ["Aleksey Kuznetsov <zummenix@gmail.com>"]
 description = "A convenient way to open xcodeproj/xcworkspace from a command line"
 edition = "2021"
@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 walkdir = "2"
 itertools = "0.10"
-rustyline = "9.1"
+rustyline = "10.0"
 clap = { version = "3", features = ["derive"] }
 main_error = "0.1"
 
