@@ -13,7 +13,7 @@ const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage", ".
 #[clap(author, about)]
 struct Opt {
     /// A directory where to start search for project files
-    #[clap(parse(from_os_str))]
+    #[clap()]
     dir: Option<PathBuf>,
 }
 
