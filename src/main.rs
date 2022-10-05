@@ -10,10 +10,9 @@ use walkdir::WalkDir;
 const SPECIAL_DIRS: &[&str] = &["Pods", "node_modules", ".build", "Carthage", ".swiftpm"];
 
 #[derive(Debug, Parser)]
-#[clap(author, about)]
+#[command(author, about)]
 struct Opt {
     /// A directory where to start search for project files
-    #[clap()]
     dir: Option<PathBuf>,
 }
 
