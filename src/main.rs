@@ -51,7 +51,7 @@ fn main() -> Result<(), main_error::MainError> {
                     }
                 }
             }
-            let mut rl = rustyline::Editor::<()>::new()?;
+            let mut rl = rustyline::DefaultEditor::new()?;
             let line = rl.readline("Enter the number of the project to open: ")?;
             line.parse::<u32>()
                 .ok()
