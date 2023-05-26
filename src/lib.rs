@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
@@ -41,10 +40,16 @@ where
 }
 
 fn grouped(entries: Vec<PathBuf>) -> HashMap<PathBuf, Vec<PathBuf>> {
+    let mut lookup = HashMap::new();
+
     entries
         .into_iter()
         .map(|entry| (entry.parent().unwrap().to_owned(), entry))
-        .into_group_map()
+        .for_each(|(key, val)| {
+            lookup.entry(key).or_insert_with(Vec::new).push(val);
+        });
+
+    lookup
 }
 
 fn filter_entries<I>(root: &Path, entries_iter: I, special_dirs: &[&str]) -> Vec<PathBuf>
