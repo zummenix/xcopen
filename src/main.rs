@@ -3,7 +3,7 @@ use xcopen::DirStatus;
 use clap::Parser;
 use std::collections::HashMap;
 use std::env;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -51,14 +51,23 @@ fn main() -> Result<(), main_error::MainError> {
                     }
                 }
             }
-            let mut rl = rustyline::DefaultEditor::new()?;
-            let line = rl.readline("Enter the number of the project to open: ")?;
+            let line = promt(&mut stdout, "Enter the number of the project to open: ")?;
             line.parse::<u32>()
                 .ok()
                 .and_then(|number| projects_map.get(&number))
                 .map_or(Ok(()), open)
         }
     }
+}
+
+/// Promts to type something and returns a string.
+fn promt(mut stdout: &mut impl Write, promt: &str) -> Result<String, io::Error> {
+    write!(&mut stdout, "{promt}")?;
+    stdout.flush()?;
+
+    let mut input = String::new();
+    io::stdin().lock().read_line(&mut input)?;
+    Ok(input.trim().to_string())
 }
 
 /// Tries to open xcworkspace/xcodeproj file using `open` tool.

@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 walkdir = "2"
-rustyline = "11.0"
 clap = { version = "4.1", features = ["derive"] }
 main_error = "0.1"
 
