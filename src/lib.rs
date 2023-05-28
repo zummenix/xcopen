@@ -26,7 +26,7 @@ where
         let groups = grouped(entries);
         if groups.len() == 1 {
             match groups.iter().next().unwrap().1.as_slice() {
-                [first, second] => match (is_xcworkspace(&first), is_xcworkspace(&second)) {
+                [first, second] => match (is_xcworkspace(first), is_xcworkspace(second)) {
                     (true, false) => DirStatus::Project(first.to_owned()),
                     (false, true) => DirStatus::Project(second.to_owned()),
                     (_, _) => DirStatus::Groups(groups),
@@ -58,7 +58,7 @@ where
 {
     let root_is_special = special_dirs.iter().any(|dir| has_parent(root, dir));
     entries_iter
-        .filter(|entry| is_xcodeproj(&entry) || is_xcworkspace(&entry) || is_package(&entry))
+        .filter(|entry| is_xcodeproj(entry) || is_xcworkspace(entry) || is_package(entry))
         .filter(|entry| {
             // Skip workspaces under xcodeproj, example:
             // /Backgrounder/Backgrounder.xcodeproj

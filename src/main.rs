@@ -3,7 +3,7 @@ use xcopen::DirStatus;
 use clap::Parser;
 use std::collections::HashMap;
 use std::env;
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
@@ -25,11 +25,11 @@ fn main() -> Result<(), main_error::MainError> {
         .into_iter()
         .filter_map(Result::ok)
         .map(|dir_entry| dir_entry.into_path());
-    match xcopen::dir_status(&dir, entries_iter, &SPECIAL_DIRS) {
+    match xcopen::dir_status(&dir, entries_iter, SPECIAL_DIRS) {
         DirStatus::NoEntries => {
             Err(format!("No project files found under {}", dir.to_string_lossy()).into())
         }
-        DirStatus::Project(path) => open(&path),
+        DirStatus::Project(path) => open(path),
         DirStatus::Groups(groups) => {
             let mut number: u32 = 1;
             let mut projects_map: HashMap<u32, PathBuf> = HashMap::new();
@@ -51,14 +51,23 @@ fn main() -> Result<(), main_error::MainError> {
                     }
                 }
             }
-            let mut rl = rustyline::DefaultEditor::new()?;
-            let line = rl.readline("Enter the number of the project to open: ")?;
+            let line = promt(&mut stdout, "Enter the number of the project to open: ")?;
             line.parse::<u32>()
                 .ok()
                 .and_then(|number| projects_map.get(&number))
                 .map_or(Ok(()), open)
         }
     }
+}
+
+/// Promts to type something and returns a string.
+fn promt(mut stdout: &mut impl Write, promt: &str) -> Result<String, io::Error> {
+    write!(&mut stdout, "{promt}")?;
+    stdout.flush()?;
+
+    let mut input = String::new();
+    io::stdin().lock().read_line(&mut input)?;
+    Ok(input.trim().to_string())
 }
 
 /// Tries to open xcworkspace/xcodeproj file using `open` tool.
