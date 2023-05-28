@@ -25,11 +25,11 @@ fn main() -> Result<(), main_error::MainError> {
         .into_iter()
         .filter_map(Result::ok)
         .map(|dir_entry| dir_entry.into_path());
-    match xcopen::dir_status(&dir, entries_iter, &SPECIAL_DIRS) {
+    match xcopen::dir_status(&dir, entries_iter, SPECIAL_DIRS) {
         DirStatus::NoEntries => {
             Err(format!("No project files found under {}", dir.to_string_lossy()).into())
         }
-        DirStatus::Project(path) => open(&path),
+        DirStatus::Project(path) => open(path),
         DirStatus::Groups(groups) => {
             let mut number: u32 = 1;
             let mut projects_map: HashMap<u32, PathBuf> = HashMap::new();
