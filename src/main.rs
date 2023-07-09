@@ -51,7 +51,7 @@ fn main() -> Result<(), main_error::MainError> {
                     }
                 }
             }
-            let line = promt(&mut stdout, "Enter the number of the project to open: ")?;
+            let line = prompt(&mut stdout, "Enter the number of the project to open: ")?;
             line.parse::<u32>()
                 .ok()
                 .and_then(|number| projects_map.get(&number))
@@ -60,9 +60,9 @@ fn main() -> Result<(), main_error::MainError> {
     }
 }
 
-/// Promts to type something and returns a string.
-fn promt(mut stdout: &mut impl Write, promt: &str) -> Result<String, io::Error> {
-    write!(&mut stdout, "{promt}")?;
+/// Prompts to type something and returns a string.
+fn prompt(mut stdout: &mut impl Write, prompt: &str) -> Result<String, io::Error> {
+    write!(&mut stdout, "{prompt}")?;
     stdout.flush()?;
 
     let mut input = String::new();
