@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 walkdir = "2"
-clap = { version = "4.4", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 main_error = "0.1"
 
 [profile.release]
